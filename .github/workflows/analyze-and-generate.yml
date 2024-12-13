@@ -36,7 +36,7 @@ jobs:
 
       - name: Run Tests with Coverage
         run: |
-          pytest --cov=login_tests --cov-report=xml:coverage/coverage.xml tests/login.py
+          pytest --cov=. --cov-report=xml:coverage/coverage.xml tests/
 
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v3
