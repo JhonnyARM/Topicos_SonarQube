@@ -1,4 +1,4 @@
-# Local Tests Package
+# Login with Microsoft Test Package
 
 Este paquete incluye configuraciones y utilidades para ejecutar pruebas locales en Android utilizando Appium, Python y Pytest.
 
