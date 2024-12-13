@@ -88,15 +88,15 @@ jobs:
         env:
           RESPONSE: ${{ env.response }}
 
-      - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Run SonarCloud Analysis
+        uses: SonarSource/sonarqube-scan-action@v4.1.0
         with:
           args: >
-            -Dsonar.organization=Jhonnyarm
+            -Dsonar.organization=jhonnyarm
             -Dsonar.projectKey=JhonnyARM_Topicos_SonarQube
             -Dsonar.sources=login_tests
             -Dsonar.python.coverage.reportPaths=coverage/coverage.xml
             -Dsonar.inclusions=login_tests/utils/des_cap.py,login_tests/utils/driver_utils.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
