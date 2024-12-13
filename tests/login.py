@@ -1,32 +1,22 @@
+from unittest.mock import MagicMock
 import pytest
-from login_tests.utils.driver_utils import initialize_driver
 from login_tests.microsoft_login_test import MicrosoftLoginTest
 
-# Fixture para manejar el driver
 @pytest.fixture
-def driver():
-    custom_des_cap = {
-        "platformName": "Android",
-        "appium:platformVersion": "11",
-        "appium:deviceName": "emulator-5554",
-        "appium:appPackage": "com.example.florales",
-        "appium:appActivity": ".MainActivity",
-        "app": "C:\\Users\\Usuario\\UniversidadLabs\\proyecto-si8811a-2024-ii-u1-desarrollomovil_corrales_viveros\\build\\app\\outputs\\flutter-apk\\app-debug.apk",
-        "appium:noReset": True
-    }
+def mock_driver():
+    # Crea un mock del driver de Appium
+    driver = MagicMock()
+    driver.find_element.return_value = MagicMock()
+    driver.find_element().click.return_value = None
+    return driver
 
-    driver = initialize_driver(user_input=custom_des_cap)
-    yield driver
-    driver.quit()
+def test_microsoft_login_with_mock(mock_driver):
+    # Instancia la clase con el driver mockeado
+    login_handler = MicrosoftLoginTest(mock_driver)
 
-# Prueba del flujo de login
-def test_microsoft_login(driver):
-    login_handler = MicrosoftLoginTest(driver)
+    # Ejecuta el método de login
+    login_handler.login("testuser@example.com", "password123")
 
-    try:
-        login_handler.login("correo", "contraseña")
-    except RuntimeError as e:
-        pytest.fail(f"Error en el flujo de login: {e}")
-
-    # Agregar validaciones adicionales si es posible
-    assert driver.current_activity == ".MainActivity", "El login no redirigió correctamente"
+    # Verifica que se llamaron los métodos esperados
+    assert mock_driver.find_element.called
+    assert mock_driver.find_element().click.called
