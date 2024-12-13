@@ -32,7 +32,7 @@ jobs:
 
       - name: Run Tests with Coverage
         run: |
-          pytest --cov=TeamWebQaUPT --cov-report=xml:coverage/coverage.xml Tests/test_utils.py Tests/test_webdriver_config.py
+          pytest --cov=login_tests --cov-report=xml:coverage/coverage.xml login_tests/microsoft_login_test.py Tests/utils/driver_utils.py
 
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v3
@@ -91,8 +91,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.organization=Jhonny
+            -Dsonar.organization=Jhonnyarm
             -Dsonar.projectKey=JhonnyARM_Topicos_SonarQube
-            -Dsonar.sources=TeamWebQaUPT
+            -Dsonar.sources=login_tests
             -Dsonar.python.coverage.reportPaths=coverage/coverage.xml
-            -Dsonar.inclusions=TeamWebQaUPT/webdriver_config.py,TeamWebQaUPT/utils.py
+            -Dsonar.inclusions=login_tests/utils/des_cap.py,login_tests/utils/driver_utils.py
