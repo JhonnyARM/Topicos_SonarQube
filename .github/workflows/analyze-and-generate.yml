@@ -1,0 +1,98 @@
+name: SonarCloud Analysis and Publish to PyPI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  sonarcloud-analysis:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install Dependencies
+        run: |
+          pip install pytest pytest-cov selenium jq
+
+      - name: Run Tests with Coverage
+        run: |
+          pytest --cov=TeamWebQaUPT --cov-report=xml:coverage/coverage.xml Tests/test_utils.py Tests/test_webdriver_config.py
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage/coverage.xml
+
+      - name: Fetch SonarCloud Metrics and Display
+        id: fetch-metrics
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -e
+          SONAR_API_URL="https://sonarcloud.io/api/measures/component"
+          PROJECT_KEY="JhonnyARM_Topicos_SonarQube"
+          METRICS="bugs,vulnerabilities,code_smells,coverage,duplicated_lines_density,complexity,ncloc,cognitive_complexity,comment_lines_density,security_rating,reliability_rating,sqale_rating"
+
+          echo "Fetching SonarCloud Metrics..."
+          RESPONSE=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_API_URL?component=$PROJECT_KEY&metricKeys=$METRICS")
+
+          if [[ -z "$RESPONSE" || "$RESPONSE" == *"errors"* ]]; then
+            echo "SonarCloud API Response: $RESPONSE"
+            echo "Error fetching SonarCloud metrics. Please check the project key and SonarCloud API token."
+            exit 1
+          fi
+
+          echo "SonarCloud API Response: $RESPONSE"
+          echo "response=$RESPONSE" >> $GITHUB_ENV
+
+      - name: Publish SonarCloud Metrics as Annotations
+        run: |
+          echo "## SonarCloud Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric               | Value   | Icon       |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------------------|---------|------------|" >> $GITHUB_STEP_SUMMARY
+
+          echo $RESPONSE | jq -r '.component.measures[] | 
+          if .metric == "coverage" then "| Coverage             | \(.value)% | :white_check_mark: |" 
+          elif .metric == "complexity" then "| Complexity           | \(.value) | :triangular_ruler: |" 
+          elif .metric == "ncloc" then "| Lines of Code        | \(.value) | :scroll: |" 
+          elif .metric == "security_rating" then "| Security Rating      | \(.value) | :shield: |" 
+          elif .metric == "reliability_rating" then "| Reliability Rating   | \(.value) | :tools: |" 
+          elif .metric == "sqale_rating" then "| Maintainability      | \(.value) | :recycle: |" 
+          elif .metric == "code_smells" then "| Code Smells          | \(.value) | :nose: |" 
+          elif .metric == "duplicated_lines_density" then "| Duplications         | \(.value)% | :twisted_rightwards_arrows: |" 
+          elif .metric == "cognitive_complexity" then "| Cognitive Complexity | \(.value) | :brain: |" 
+          elif .metric == "bugs" then "| Bugs                 | \(.value) | :bug: |" 
+          elif .metric == "comment_lines_density" then "| Comment Density      | \(.value)% | :speech_balloon: |" 
+          else empty end' >> $GITHUB_STEP_SUMMARY
+        env:
+          RESPONSE: ${{ env.response }}
+
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=Jhonny
+            -Dsonar.projectKey=JhonnyARM_Topicos_SonarQube
+            -Dsonar.sources=TeamWebQaUPT
+            -Dsonar.python.coverage.reportPaths=coverage/coverage.xml
+            -Dsonar.inclusions=TeamWebQaUPT/webdriver_config.py,TeamWebQaUPT/utils.py
